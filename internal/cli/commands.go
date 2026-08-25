@@ -96,11 +96,9 @@ func listTasks(args []string) {
 		task.List(task.InProgress)
 	case "done":
 		task.List(task.Done)
-	case "all", "--all", "-a":
-		task.ListAll()
 	default:
 		fmt.Printf("Invalid filter: %s\n", filter)
-		fmt.Println("Available filters: todo, in-progress, done, all")
+		fmt.Println("Available filters: todo, in-progress, done")
 		os.Exit(1)
 	}
 }
