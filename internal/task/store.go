@@ -21,6 +21,10 @@ type StoreData struct {
 
 var store *TaskStore
 
+func SetTestStore(s *TaskStore) {
+	store = s
+}
+
 func InitStore() error {
 	var err error
 	store, err = NewTaskStore("data/tasks.json")
