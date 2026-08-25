@@ -9,9 +9,12 @@ import (
 
 func main() {
 	if err := task.InitTaskStore(); err != nil {
-		fmt.Printf("Error initializing task store: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error initializing task store: %v\n", err)
 		os.Exit(1)
 	}
 
-	cli.Run(os.Args[1:])
+	if err := cli.Run(os.Args[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 }

@@ -2,16 +2,15 @@ package cli
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"task-cli/internal/task"
 )
 
-func Run(args []string) {
+func Run(args []string) error {
 	if len(args) == 0 {
 		printHelp()
-		return
+		return nil
 	}
 
 	command := args[0]
@@ -19,120 +18,175 @@ func Run(args []string) {
 
 	switch command {
 	case "add", "a":
-		addTask(cmdArgs)
+		return addTask(cmdArgs)
 	case "update", "u":
-		updateTask(cmdArgs)
+		return updateTask(cmdArgs)
 	case "delete", "del", "rm", "d":
-		deleteTask(cmdArgs)
+		return deleteTask(cmdArgs)
 	case "list", "ls", "l":
-		listTasks(cmdArgs)
+		return listTasks(cmdArgs)
 	case "mark-in-progress", "start":
-		markInProgress(cmdArgs)
+		return markInProgress(cmdArgs)
 	case "mark-done", "done", "complete":
-		markDone(cmdArgs)
+		return markDone(cmdArgs)
 	case "help", "-h", "--help", "h", "?":
 		printHelp()
+		return nil
 	default:
-		fmt.Printf("Unknown command: %s\n", command)
-		fmt.Println("Run 'taskcli help' for available commands")
-		os.Exit(1)
+		return fmt.Errorf("unknown command: %s\nRun 'taskcli help' for available commands", command)
 	}
 }
 
-func addTask(args []string) {
+func addTask(args []string) error {
 	if len(args) < 1 {
-		fmt.Println("Usage: taskcli add <description>")
-		fmt.Println("Example: taskcli add \"Buy groceries\"")
-		os.Exit(1)
+		return fmt.Errorf("usage: taskcli add <description>\nExample: taskcli add \"Buy groceries\"")
 	}
+
 	description := strings.Join(args, " ")
-	task.AddTask(description)
+	id, err := task.AddTask(description)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Task added successfully. ID: %d\n", id)
+	return nil
 }
 
-func updateTask(args []string) {
+func updateTask(args []string) error {
 	if len(args) < 2 {
-		fmt.Println("Usage: taskcli update <id> <description>")
-		fmt.Println("Example: taskcli update 1 \"Buy milk and eggs\"")
-		os.Exit(1)
+		return fmt.Errorf("usage: taskcli update <id> <description>\nExample: taskcli update 1 \"Buy milk and eggs\"")
 	}
 
 	id, err := strconv.Atoi(args[0])
 	if err != nil {
-		fmt.Printf("Error: '%s' is not a valid number\n", args[0])
-		os.Exit(1)
+		return fmt.Errorf("'%s' is not a valid number", args[0])
 	}
 
 	description := strings.Join(args[1:], " ")
-	task.UpdateTaskTitle(id, description)
+	if err := task.UpdateTaskTitle(id, description); err != nil {
+		return err
+	}
+
+	fmt.Printf("Task %d updated successfully\n", id)
+	return nil
 }
 
-func deleteTask(args []string) {
+func deleteTask(args []string) error {
 	if len(args) < 1 {
-		fmt.Println("Usage: taskcli delete <id>")
-		fmt.Println("Example: taskcli delete 1")
-		os.Exit(1)
+		return fmt.Errorf("usage: taskcli delete <id>\nExample: taskcli delete 1")
 	}
 
 	id, err := strconv.Atoi(args[0])
 	if err != nil {
-		fmt.Printf("Error: '%s' is not a valid number\n", args[0])
-		os.Exit(1)
+		return fmt.Errorf("'%s' is not a valid number", args[0])
 	}
 
-	task.DeleteTask(id)
+	if err := task.DeleteTask(id); err != nil {
+		return err
+	}
+
+	fmt.Printf("Task %d deleted successfully\n", id)
+	return nil
 }
 
-func listTasks(args []string) {
+func listTasks(args []string) error {
+	var tasks []task.Task
+	var err error
+
 	if len(args) == 0 {
-		task.ListAll()
+		tasks, err = task.ListAll()
+	} else {
+		filter := args[0]
+		switch filter {
+		case "todo":
+			tasks, err = task.List(task.Todo)
+		case "in-progress":
+			tasks, err = task.List(task.InProgress)
+		case "done":
+			tasks, err = task.List(task.Done)
+		default:
+			return fmt.Errorf("invalid filter: %s\nAvailable filters: todo, in-progress, done", filter)
+		}
+	}
+
+	if err != nil {
+		return err
+	}
+
+	displayTasks(tasks)
+	return nil
+}
+
+func markInProgress(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: taskcli mark-in-progress <id>\nExample: taskcli mark-in-progress 1")
+	}
+
+	id, err := strconv.Atoi(args[0])
+	if err != nil {
+		return fmt.Errorf("'%s' is not a valid number", args[0])
+	}
+
+	if err := task.ChangeState(id, task.InProgress); err != nil {
+		return err
+	}
+
+	fmt.Printf("Task %d marked as in-progress\n", id)
+	return nil
+}
+
+func markDone(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: taskcli mark-done <id>\nExample: taskcli mark-done 1")
+	}
+
+	id, err := strconv.Atoi(args[0])
+	if err != nil {
+		return fmt.Errorf("'%s' is not a valid number", args[0])
+	}
+
+	if err := task.ChangeState(id, task.Done); err != nil {
+		return err
+	}
+
+	fmt.Printf("Task %d marked as done\n", id)
+	return nil
+}
+
+func displayTasks(tasks []task.Task) {
+	if len(tasks) == 0 {
+		fmt.Println("No tasks found.")
 		return
 	}
 
-	filter := args[0]
-	switch filter {
-	case "todo":
-		task.List(task.Todo)
-	case "in-progress":
-		task.List(task.InProgress)
-	case "done":
-		task.List(task.Done)
-	default:
-		fmt.Printf("Invalid filter: %s\n", filter)
-		fmt.Println("Available filters: todo, in-progress, done")
-		os.Exit(1)
+	fmt.Printf("Found %d task(s):\n\n", len(tasks))
+	for _, t := range tasks {
+		displayTask(t)
 	}
 }
 
-func markInProgress(args []string) {
-	if len(args) < 1 {
-		fmt.Println("Usage: taskcli mark-in-progress <id>")
-		fmt.Println("Example: taskcli mark-in-progress 1")
-		os.Exit(1)
+func displayTask(t task.Task) {
+	statusStr := ""
+	switch t.Status {
+	case task.Todo:
+		statusStr = "Todo"
+	case task.InProgress:
+		statusStr = "In Progress"
+	case task.Done:
+		statusStr = "Done"
 	}
 
-	id, err := strconv.Atoi(args[0])
-	if err != nil {
-		fmt.Printf("Error: '%s' is not a valid number\n", args[0])
-		os.Exit(1)
+	fmt.Printf("[%d] %s\n", t.Id, t.Description)
+	fmt.Printf("  Status: %s | Created: %s\n",
+		statusStr,
+		t.CreatedAt.Format("2006-01-02 15:04"))
+
+	if t.UpdatedAt != nil {
+		fmt.Printf("  Updated: %s\n", t.UpdatedAt.Format("2006-01-02 15:04"))
+	} else {
+		fmt.Printf("  Updated: Never\n")
 	}
-
-	task.ChangeState(id, task.InProgress)
-}
-
-func markDone(args []string) {
-	if len(args) < 1 {
-		fmt.Println("Usage: taskcli mark-done <id>")
-		fmt.Println("Example: taskcli mark-done 1")
-		os.Exit(1)
-	}
-
-	id, err := strconv.Atoi(args[0])
-	if err != nil {
-		fmt.Printf("Error: '%s' is not a valid number\n", args[0])
-		os.Exit(1)
-	}
-
-	task.ChangeState(id, task.Done)
+	fmt.Println()
 }
 
 func printHelp() {
@@ -146,7 +200,7 @@ COMMANDS:
   add, a      <description>    Add a new task
   update, u   <id> <desc>      Update task description
   delete, del <id>             Delete a task
-  list, ls    [filter]         List tasks (filter: todo, in-progress, done, all)
+  list, ls    [filter]         List tasks (filter: todo, in-progress, done)
   mark-in-progress, start <id> Mark task as in-progress
   mark-done, done, complete <id> Mark task as done
   help, -h                     Show this help

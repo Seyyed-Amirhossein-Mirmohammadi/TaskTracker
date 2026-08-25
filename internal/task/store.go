@@ -106,17 +106,18 @@ func loadTaskById(id int) (Task, error) {
 	return Task{}, fmt.Errorf("task with ID %d not found", id)
 }
 
-func saveNewTaskToJson(task *Task) {
+func saveNewTaskToJson(task *Task) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
 	store.Data.Tasks = append(store.Data.Tasks, *task)
 	if err := store.SaveNoLock(); err != nil {
-		fmt.Printf("Error saving task: %v\n", err)
+		return fmt.Errorf("failed to save task to file: %w", err)
 	}
+	return nil
 }
 
-func updateTaskInJson(task *Task) {
+func updateTaskInJson(task *Task) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -124,15 +125,15 @@ func updateTaskInJson(task *Task) {
 		if t.Id == task.Id {
 			store.Data.Tasks[i] = *task
 			if err := store.SaveNoLock(); err != nil {
-				fmt.Printf("Error updating task: %v\n", err)
+				return fmt.Errorf("failed to update task in file: %w", err)
 			}
-			return
+			return nil
 		}
 	}
-	fmt.Printf("Task with ID %d not found for update\n", task.Id)
+	return fmt.Errorf("task with ID %d not found for update", task.Id)
 }
 
-func deleteTaskFromJson(task *Task) {
+func deleteTaskFromJson(task *Task) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -140,15 +141,14 @@ func deleteTaskFromJson(task *Task) {
 		if t.Id == task.Id {
 			store.Data.Tasks = append(store.Data.Tasks[:i], store.Data.Tasks[i+1:]...)
 			if err := store.SaveNoLock(); err != nil {
-				fmt.Printf("Error deleting task: %v\n", err)
+				return fmt.Errorf("failed to delete task from file: %w", err)
 			}
-			return
+			return nil
 		}
 	}
-	fmt.Printf("Task with ID %d not found for deletion\n", task.Id)
+	return fmt.Errorf("task with ID %d not found for deletion", task.Id)
 }
 
-// SaveNoLock saves without locking (caller must hold lock)
 func (s *TaskStore) SaveNoLock() error {
 	data, err := json.MarshalIndent(s.Data, "", "  ")
 	if err != nil {
@@ -158,26 +158,23 @@ func (s *TaskStore) SaveNoLock() error {
 	if err := os.WriteFile(s.filePath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
-
 	return nil
 }
 
-func listAll() {
+func listAll() ([]Task, error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
 	if len(store.Data.Tasks) == 0 {
-		fmt.Println("No tasks found.")
-		return
+		return []Task{}, nil
 	}
 
-	fmt.Printf("All Tasks (%d total):\n\n", len(store.Data.Tasks))
-	for _, task := range store.Data.Tasks {
-		displayTask(task)
-	}
+	tasks := make([]Task, len(store.Data.Tasks))
+	copy(tasks, store.Data.Tasks)
+	return tasks, nil
 }
 
-func list(status Status) {
+func list(status Status) ([]Task, error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -188,39 +185,9 @@ func list(status Status) {
 		}
 	}
 
-	if len(filtered) == 0 {
-		fmt.Printf("No %s tasks found.\n", status)
-		return
-	}
-
-	fmt.Printf("%s Tasks (%d total):\n\n", status, len(filtered))
-	for _, task := range filtered {
-		displayTask(task)
-	}
-}
-
-func displayTask(task Task) {
-	statusStr := ""
-	switch task.Status {
-	case Todo:
-		statusStr = "Todo"
-	case InProgress:
-		statusStr = "In Progress"
-	case Done:
-		statusStr = "Done"
-	}
-
-	fmt.Printf("[%d] %s\n", task.Id, task.Description)
-	fmt.Printf("  Status: %s | Created: %s\n",
-		statusStr,
-		task.CreatedAt.Format("2006-01-02 15:04"))
-
-	if task.UpdatedAt != nil {
-		fmt.Printf("  Updated: %s\n", task.UpdatedAt.Format("2006-01-02 15:04"))
-	} else {
-		fmt.Printf("  Updated: Never\n")
-	}
-	fmt.Println()
+	tasks := make([]Task, len(filtered))
+	copy(tasks, filtered)
+	return tasks, nil
 }
 
 func (s Status) String() string {
