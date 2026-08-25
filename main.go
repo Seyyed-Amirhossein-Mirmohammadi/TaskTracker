@@ -1,9 +1,7 @@
 package main
 
-import (
-	"fmt"
-)
+import "github.com/Seyyed-Amirhossein-Mirmohammadi/TaskTracker.git/internal/cli"
 
 func main() {
-	fmt.Println("Hello world")
+	cli.RunInteractive()
 }
