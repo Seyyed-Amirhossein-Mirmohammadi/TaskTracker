@@ -1,3 +1,3 @@
-module github.com/Seyyed-Amirhossein-Mirmohammadi/TaskTracker.git
+module task-cli
 
 go 1.24.1

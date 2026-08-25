@@ -5,9 +5,20 @@ import (
 	"time"
 )
 
+func InitTaskStore() error {
+	return InitStore()
+}
+
 func AddTask(description string) {
-	task := Task{Id: generateTaskId(), Description: description, Status: Todo, CreatedAt: time.Now(), UpdatedAt: nil}
+	task := Task{
+		Id:          generateTaskId(),
+		Description: description,
+		Status:      Todo,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   nil,
+	}
 	saveNewTaskToJson(&task)
+	fmt.Printf("Task added successfully. ID: %d\n", task.Id)
 }
 
 func UpdateTaskTitle(id int, description string) {
@@ -17,7 +28,10 @@ func UpdateTaskTitle(id int, description string) {
 		return
 	}
 	task.Description = description
+	now := time.Now()
+	task.UpdatedAt = &now
 	updateTaskInJson(&task)
+	fmt.Printf("Task %d updated successfully\n", id)
 }
 
 func DeleteTask(id int) {
@@ -27,6 +41,7 @@ func DeleteTask(id int) {
 		return
 	}
 	deleteTaskFromJson(&task)
+	fmt.Printf("Task %d deleted successfully\n", id)
 }
 
 func ChangeState(id int, status Status) {
@@ -36,7 +51,10 @@ func ChangeState(id int, status Status) {
 		return
 	}
 	task.Status = status
+	now := time.Now()
+	task.UpdatedAt = &now
 	updateTaskInJson(&task)
+	fmt.Printf("Task %d status updated to %s\n", id, status)
 }
 
 func ListAll() {
