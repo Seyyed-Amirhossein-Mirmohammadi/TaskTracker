@@ -22,7 +22,6 @@ func setupTestTask(t *testing.T) (*TaskStore, string) {
 	if err != nil {
 		t.Fatalf("failed to create store: %v", err)
 	}
-	// Set global store for package functions
 	store = s
 	return s, absDir
 }

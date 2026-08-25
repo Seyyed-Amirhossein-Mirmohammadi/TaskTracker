@@ -9,12 +9,10 @@ import (
 
 func setupTestStore(t *testing.T) (*TaskStore, string) {
 	t.Helper()
-	// Use absolute path without tildes
 	tmpDir, err := os.MkdirTemp("", "task_test")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
-	// Get absolute path to resolve any symlinks/short paths
 	absDir, err := filepath.Abs(tmpDir)
 	if err != nil {
 		t.Fatalf("failed to get absolute path: %v", err)
@@ -78,12 +76,8 @@ func TestStore_LoadAndSave(t *testing.T) {
 func TestGenerateTaskID(t *testing.T) {
 	s, tmpDir := setupTestStore(t)
 	defer cleanupTestStore(tmpDir)
-
 	s.Data.LastID = 5
-
-	// Set global store for package functions
 	store = s
-
 	id := generateTaskID()
 	if id != 6 {
 		t.Errorf("expected 6, got %d", id)
