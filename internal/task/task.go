@@ -15,18 +15,18 @@ func AddTask(description string) (int, error) {
 	}
 
 	task := Task{
-		Id:          generateTaskId(),
+		ID:          generateTaskID(),
 		Description: description,
 		Status:      Todo,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   nil,
 	}
 
-	if err := saveNewTaskToJson(&task); err != nil {
+	if err := saveNewTaskToJSON(&task); err != nil {
 		return 0, fmt.Errorf("failed to save task: %w", err)
 	}
 
-	return task.Id, nil
+	return task.ID, nil
 }
 
 func UpdateTaskTitle(id int, description string) error {
@@ -34,7 +34,7 @@ func UpdateTaskTitle(id int, description string) error {
 		return fmt.Errorf("task description cannot be empty")
 	}
 
-	task, err := loadTaskById(id)
+	task, err := loadTaskByID(id)
 	if err != nil {
 		return fmt.Errorf("task with ID %d not found", id)
 	}
@@ -43,7 +43,7 @@ func UpdateTaskTitle(id int, description string) error {
 	now := time.Now()
 	task.UpdatedAt = &now
 
-	if err := updateTaskInJson(&task); err != nil {
+	if err := updateTaskInJSON(&task); err != nil {
 		return fmt.Errorf("failed to update task %d: %w", id, err)
 	}
 
@@ -51,12 +51,12 @@ func UpdateTaskTitle(id int, description string) error {
 }
 
 func DeleteTask(id int) error {
-	task, err := loadTaskById(id)
+	task, err := loadTaskByID(id)
 	if err != nil {
 		return fmt.Errorf("task with ID %d not found", id)
 	}
 
-	if err := deleteTaskFromJson(&task); err != nil {
+	if err := deleteTaskFromJSON(&task); err != nil {
 		return fmt.Errorf("failed to delete task %d: %w", id, err)
 	}
 
@@ -64,7 +64,7 @@ func DeleteTask(id int) error {
 }
 
 func ChangeState(id int, status Status) error {
-	task, err := loadTaskById(id)
+	task, err := loadTaskByID(id)
 	if err != nil {
 		return fmt.Errorf("task with ID %d not found", id)
 	}
@@ -73,7 +73,7 @@ func ChangeState(id int, status Status) error {
 	now := time.Now()
 	task.UpdatedAt = &now
 
-	if err := updateTaskInJson(&task); err != nil {
+	if err := updateTaskInJSON(&task); err != nil {
 		return fmt.Errorf("failed to update task %d status: %w", id, err)
 	}
 

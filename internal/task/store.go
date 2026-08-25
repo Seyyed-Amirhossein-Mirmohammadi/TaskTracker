@@ -57,108 +57,96 @@ func NewTaskStore(filePath string) (*TaskStore, error) {
 func (s *TaskStore) Load() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.loadLocked()
+}
 
+func (s *TaskStore) loadLocked() error {
 	data, err := os.ReadFile(s.filePath)
 	if err != nil {
 		return err
 	}
-
 	if err := json.Unmarshal(data, &s.Data); err != nil {
 		return fmt.Errorf("failed to parse JSON: %w", err)
 	}
-
 	return nil
 }
 
 func (s *TaskStore) Save() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.saveLocked()
+}
 
+func (s *TaskStore) saveLocked() error {
 	data, err := json.MarshalIndent(s.Data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
-
 	if err := os.WriteFile(s.filePath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
-
 	return nil
 }
 
-func generateTaskId() int {
+func generateTaskID() int {
 	store.mu.Lock()
 	defer store.mu.Unlock()
-
 	store.Data.LastID++
 	return store.Data.LastID
 }
 
-func loadTaskById(id int) (Task, error) {
+func loadTaskByID(id int) (Task, error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
-
 	for _, task := range store.Data.Tasks {
-		if task.Id == id {
+		if task.ID == id {
 			return task, nil
 		}
 	}
 	return Task{}, fmt.Errorf("task with ID %d not found", id)
 }
 
-func saveNewTaskToJson(task *Task) error {
+func saveNewTaskToJSON(task *Task) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
 	store.Data.Tasks = append(store.Data.Tasks, *task)
-	if err := store.SaveNoLock(); err != nil {
+	if err := store.saveLocked(); err != nil {
 		return fmt.Errorf("failed to save task to file: %w", err)
 	}
 	return nil
 }
 
-func updateTaskInJson(task *Task) error {
+func updateTaskInJSON(task *Task) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
 	for i, t := range store.Data.Tasks {
-		if t.Id == task.Id {
+		if t.ID == task.ID {
 			store.Data.Tasks[i] = *task
-			if err := store.SaveNoLock(); err != nil {
+			if err := store.saveLocked(); err != nil {
 				return fmt.Errorf("failed to update task in file: %w", err)
 			}
 			return nil
 		}
 	}
-	return fmt.Errorf("task with ID %d not found for update", task.Id)
+	return fmt.Errorf("task with ID %d not found for update", task.ID)
 }
 
-func deleteTaskFromJson(task *Task) error {
+func deleteTaskFromJSON(task *Task) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
 	for i, t := range store.Data.Tasks {
-		if t.Id == task.Id {
+		if t.ID == task.ID {
 			store.Data.Tasks = append(store.Data.Tasks[:i], store.Data.Tasks[i+1:]...)
-			if err := store.SaveNoLock(); err != nil {
+			if err := store.saveLocked(); err != nil {
 				return fmt.Errorf("failed to delete task from file: %w", err)
 			}
 			return nil
 		}
 	}
-	return fmt.Errorf("task with ID %d not found for deletion", task.Id)
-}
-
-func (s *TaskStore) SaveNoLock() error {
-	data, err := json.MarshalIndent(s.Data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal JSON: %w", err)
-	}
-
-	if err := os.WriteFile(s.filePath, data, 0644); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
-	}
-	return nil
+	return fmt.Errorf("task with ID %d not found for deletion", task.ID)
 }
 
 func listAll() ([]Task, error) {
@@ -193,13 +181,13 @@ func list(status Status) ([]Task, error) {
 func (s Status) String() string {
 	switch s {
 	case Todo:
-		return "Todo"
+		return "todo"
 	case InProgress:
-		return "In Progress"
+		return "in-progress"
 	case Done:
-		return "Done"
+		return "done"
 	default:
-		return "Unknown"
+		return "unknown"
 	}
 }
 
@@ -212,13 +200,12 @@ func (s *Status) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &str); err != nil {
 		return err
 	}
-
 	switch str {
-	case "Todo":
+	case "todo":
 		*s = Todo
-	case "In Progress":
+	case "in-progress":
 		*s = InProgress
-	case "Done":
+	case "done":
 		*s = Done
 	default:
 		return fmt.Errorf("invalid status: %s", str)

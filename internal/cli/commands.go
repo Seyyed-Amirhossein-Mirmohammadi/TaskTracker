@@ -165,17 +165,9 @@ func displayTasks(tasks []task.Task) {
 }
 
 func displayTask(t task.Task) {
-	statusStr := ""
-	switch t.Status {
-	case task.Todo:
-		statusStr = "todo"
-	case task.InProgress:
-		statusStr = "in-progress"
-	case task.Done:
-		statusStr = "done"
-	}
+	statusStr := t.Status.String()
 
-	fmt.Printf("ID: %d\n", t.Id)
+	fmt.Printf("ID: %d\n", t.ID)
 	fmt.Printf("Description: %s\n", t.Description)
 	fmt.Printf("Status: %s\n", statusStr)
 	fmt.Printf("Created At: %s\n", t.CreatedAt.Format("2006-01-02 15:04:05"))
