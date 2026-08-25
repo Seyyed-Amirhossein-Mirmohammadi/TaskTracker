@@ -17,29 +17,29 @@ func Run(args []string) error {
 	cmdArgs := args[1:]
 
 	switch command {
-	case "add", "a":
+	case "add":
 		return addTask(cmdArgs)
-	case "update", "u":
+	case "update":
 		return updateTask(cmdArgs)
-	case "delete", "del", "rm", "d":
+	case "delete":
 		return deleteTask(cmdArgs)
-	case "list", "ls", "l":
+	case "list":
 		return listTasks(cmdArgs)
-	case "mark-in-progress", "start":
+	case "mark-in-progress":
 		return markInProgress(cmdArgs)
-	case "mark-done", "done", "complete":
+	case "mark-done":
 		return markDone(cmdArgs)
-	case "help", "-h", "--help", "h", "?":
+	case "help", "-h", "--help":
 		printHelp()
 		return nil
 	default:
-		return fmt.Errorf("unknown command: %s\nRun 'taskcli help' for available commands", command)
+		return fmt.Errorf("unknown command: %s\nRun 'task-cli help' for available commands", command)
 	}
 }
 
 func addTask(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: taskcli add <description>\nExample: taskcli add \"Buy groceries\"")
+		return fmt.Errorf("usage: task-cli add <description>")
 	}
 
 	description := strings.Join(args, " ")
@@ -48,13 +48,13 @@ func addTask(args []string) error {
 		return err
 	}
 
-	fmt.Printf("Task added successfully. ID: %d\n", id)
+	fmt.Printf("Task added successfully (ID: %d)\n", id)
 	return nil
 }
 
 func updateTask(args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: taskcli update <id> <description>\nExample: taskcli update 1 \"Buy milk and eggs\"")
+		return fmt.Errorf("usage: task-cli update <id> <description>")
 	}
 
 	id, err := strconv.Atoi(args[0])
@@ -73,7 +73,7 @@ func updateTask(args []string) error {
 
 func deleteTask(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: taskcli delete <id>\nExample: taskcli delete 1")
+		return fmt.Errorf("usage: task-cli delete <id>")
 	}
 
 	id, err := strconv.Atoi(args[0])
@@ -119,7 +119,7 @@ func listTasks(args []string) error {
 
 func markInProgress(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: taskcli mark-in-progress <id>\nExample: taskcli mark-in-progress 1")
+		return fmt.Errorf("usage: task-cli mark-in-progress <id>")
 	}
 
 	id, err := strconv.Atoi(args[0])
@@ -137,7 +137,7 @@ func markInProgress(args []string) error {
 
 func markDone(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: taskcli mark-done <id>\nExample: taskcli mark-done 1")
+		return fmt.Errorf("usage: task-cli mark-done <id>")
 	}
 
 	id, err := strconv.Atoi(args[0])
@@ -159,7 +159,6 @@ func displayTasks(tasks []task.Task) {
 		return
 	}
 
-	fmt.Printf("Found %d task(s):\n\n", len(tasks))
 	for _, t := range tasks {
 		displayTask(t)
 	}
@@ -169,22 +168,19 @@ func displayTask(t task.Task) {
 	statusStr := ""
 	switch t.Status {
 	case task.Todo:
-		statusStr = "Todo"
+		statusStr = "todo"
 	case task.InProgress:
-		statusStr = "In Progress"
+		statusStr = "in-progress"
 	case task.Done:
-		statusStr = "Done"
+		statusStr = "done"
 	}
 
-	fmt.Printf("[%d] %s\n", t.Id, t.Description)
-	fmt.Printf("  Status: %s | Created: %s\n",
-		statusStr,
-		t.CreatedAt.Format("2006-01-02 15:04"))
-
+	fmt.Printf("ID: %d\n", t.Id)
+	fmt.Printf("Description: %s\n", t.Description)
+	fmt.Printf("Status: %s\n", statusStr)
+	fmt.Printf("Created At: %s\n", t.CreatedAt.Format("2006-01-02 15:04:05"))
 	if t.UpdatedAt != nil {
-		fmt.Printf("  Updated: %s\n", t.UpdatedAt.Format("2006-01-02 15:04"))
-	} else {
-		fmt.Printf("  Updated: Never\n")
+		fmt.Printf("Updated At: %s\n", t.UpdatedAt.Format("2006-01-02 15:04:05"))
 	}
 	fmt.Println()
 }
@@ -193,30 +189,31 @@ func printHelp() {
 	fmt.Print(`
 Task Manager CLI - Manage your tasks from the command line
 
-USAGE:
-  taskcli [command] [options]
+Usage:
+  task-cli <command> [arguments]
 
-COMMANDS:
-  add, a      <description>    Add a new task
-  update, u   <id> <desc>      Update task description
-  delete, del <id>             Delete a task
-  list, ls    [filter]         List tasks (filter: todo, in-progress, done)
-  mark-in-progress, start <id> Mark task as in-progress
-  mark-done, done, complete <id> Mark task as done
-  help, -h                     Show this help
+Commands:
+  add <description>              Add a new task
+  update <id> <description>      Update a task description
+  delete <id>                    Delete a task
+  mark-in-progress <id>          Mark a task as in progress
+  mark-done <id>                 Mark a task as done
+  list                           List all tasks
+  list <status>                  List tasks by status (todo, in-progress, done)
+  help                           Show this help
 
-EXAMPLES:
-  taskcli add "Buy groceries"
-  taskcli add "Write quarterly report"
-  taskcli list
-  taskcli list todo
-  taskcli list in-progress
-  taskcli update 1 "Buy milk and eggs"
-  taskcli mark-in-progress 2
-  taskcli mark-done 1
-  taskcli delete 3
+Examples:
+  task-cli add "Buy groceries"
+  task-cli update 1 "Buy groceries and cook dinner"
+  task-cli delete 1
+  task-cli mark-in-progress 1
+  task-cli mark-done 1
+  task-cli list
+  task-cli list done
+  task-cli list todo
+  task-cli list in-progress
 
-NOTES:
+Notes:
   - All data is stored in data/tasks.json
   - The app auto-creates the data directory if it doesn't exist
 `)

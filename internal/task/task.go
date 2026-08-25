@@ -81,17 +81,9 @@ func ChangeState(id int, status Status) error {
 }
 
 func ListAll() ([]Task, error) {
-	tasks, err := listAll()
-	if err != nil {
-		return nil, fmt.Errorf("failed to list tasks: %w", err)
-	}
-	return tasks, nil
+	return listAll()
 }
 
 func List(status Status) ([]Task, error) {
-	tasks, err := list(status)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list %s tasks: %w", status, err)
-	}
-	return tasks, nil
+	return list(status)
 }
