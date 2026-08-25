@@ -111,7 +111,7 @@ func saveNewTaskToJson(task *Task) {
 	defer store.mu.Unlock()
 
 	store.Data.Tasks = append(store.Data.Tasks, *task)
-	if err := store.Save(); err != nil {
+	if err := store.SaveNoLock(); err != nil {
 		fmt.Printf("Error saving task: %v\n", err)
 	}
 }
@@ -123,7 +123,7 @@ func updateTaskInJson(task *Task) {
 	for i, t := range store.Data.Tasks {
 		if t.Id == task.Id {
 			store.Data.Tasks[i] = *task
-			if err := store.Save(); err != nil {
+			if err := store.SaveNoLock(); err != nil {
 				fmt.Printf("Error updating task: %v\n", err)
 			}
 			return
@@ -139,13 +139,27 @@ func deleteTaskFromJson(task *Task) {
 	for i, t := range store.Data.Tasks {
 		if t.Id == task.Id {
 			store.Data.Tasks = append(store.Data.Tasks[:i], store.Data.Tasks[i+1:]...)
-			if err := store.Save(); err != nil {
+			if err := store.SaveNoLock(); err != nil {
 				fmt.Printf("Error deleting task: %v\n", err)
 			}
 			return
 		}
 	}
 	fmt.Printf("Task with ID %d not found for deletion\n", task.Id)
+}
+
+// SaveNoLock saves without locking (caller must hold lock)
+func (s *TaskStore) SaveNoLock() error {
+	data, err := json.MarshalIndent(s.Data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+
+	if err := os.WriteFile(s.filePath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	return nil
 }
 
 func listAll() {
